@@ -3,6 +3,7 @@
 #include <string.h>
 #include <dirent.h> 
 #include <sys/stat.h>
+#include <pthread.h>
 
 #define DIRECTORY argv[1]
 #define THREADS argv[2]
@@ -11,7 +12,7 @@
 typedef struct
 {
     char *filename;
-    int size;
+    long int size;
 } Fileinfo;
 
 int compare_by_name(const void *a, const void *b) {
@@ -56,12 +57,15 @@ int listdir(char *directory, char *extension, Fileinfo *fileinfo) {
   if (d) {
     while (((f = readdir(d)) != NULL)) {
         if(!strcmp(get_extension(f->d_name), extension)) {
-            printf("%s ", f->d_name);
+            //printf("%s ", f->d_name);
             strcpy(fileinfo[i].filename, f->d_name);
+
+            char fullpath[512];
+            snprintf(fullpath, sizeof(fullpath), "%s/%s", directory, f->d_name); //ADDS FILE PATH TO THE NAME
 
             struct stat st;
             stat(f->d_name, &st);
-            printf("%ld\n", st.st_size);
+            //printf("%ld\n", st.st_size);
             fileinfo[i].size = st.st_size;
 
             i++;
@@ -87,6 +91,10 @@ int sort_fileinfo(Fileinfo *fileinfo, char *order, int n_files) {
 
 }
 
+int applyfilter() {
+    
+}
+
 int main(int argc, char *argv[]) {
 
 /*********************************************************************************/
@@ -110,9 +118,11 @@ int main(int argc, char *argv[]) {
         perror("INVALID ORDERING CRITERION\n");
         exit(2);
     }
-
 /*********************************************************************************/
 
+/*********************************************************************************/
+/*FILE SORTING AND STORING                                                       */
+/*********************************************************************************/
     n_files = filecount(DIRECTORY, ".jpeg");
 
     Fileinfo *fileinfo = malloc(n_files * sizeof(Fileinfo));
@@ -123,11 +133,24 @@ int main(int argc, char *argv[]) {
 
     sort_fileinfo(fileinfo, ORDER, n_files);
 
+/*********************************************************************************/
+
     /*for(int i = 0; i<n_files; i++) {
-        printf("name: %s size: %i \n", fileinfo[i].filename, fileinfo[i].size);
+        printf("name: %s size: %ld \n", fileinfo[i].filename, fileinfo[i].size);
     }*/
 
 
-    //sprintf("IN DIRECTORY: %s\nNUMBER OF THREADS: %d\nORDER BY: %s\n", dir, threads, order);
+    //printf("IN DIRECTORY: %s\nNUMBER OF THREADS: %d\nORDER BY: %s\n", dir, threads, order);
 
+/*********************************************************************************/
+/*THREAD MANAGMENT                                                               */
+/*********************************************************************************/
+
+    pthread_t thread_id;
+
+    for(int i = 0; i < THREADS; i++)
+        pthread_create(&thread_id, NULL, apllyfilter, NULL);
+
+
+/*********************************************************************************/
 }
