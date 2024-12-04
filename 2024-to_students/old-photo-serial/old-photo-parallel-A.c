@@ -94,7 +94,6 @@ int sort_fileinfo(Fileinfo *fileinfo, char *order, int n_files) {
 int applyfilter() {
     
 }
-
 int main(int argc, char *argv[]) {
 
 /*********************************************************************************/
@@ -143,14 +142,31 @@ int main(int argc, char *argv[]) {
     //printf("IN DIRECTORY: %s\nNUMBER OF THREADS: %d\nORDER BY: %s\n", dir, threads, order);
 
 /*********************************************************************************/
+/*FILE CHECKER                                                                   */
+/*********************************************************************************/
+
+if( access( nome_fich, F_OK ) != -1){
+   printf("%s encontrado\n", nome_fich);
+}else{
+   printf("%s nao encontrado\n", nome_fich);
+}
+
+/*********************************************************************************/
+
+/*********************************************************************************/
 /*THREAD MANAGMENT                                                               */
 /*********************************************************************************/
 
     pthread_t thread_id;
 
-    for(int i = 0; i < THREADS; i++)
-        pthread_create(&thread_id, NULL, apllyfilter, NULL);
+    //for(int i = 0; i < THREADS; i++)
+     //   pthread_create(&thread_id, NULL, apllyfilter, NULL);
 
 
 /*********************************************************************************/
+
+/*CREATES RESULTS FOLDER                                                         */ 
+
+    mkdir("old_photo_PAR_A", 0777);
+
 }
