@@ -4,6 +4,7 @@
 #include <dirent.h> 
 #include <sys/stat.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define DIRECTORY argv[1]
 #define THREADS argv[2]
@@ -13,6 +14,7 @@ typedef struct
 {
     char *filename;
     long int size;
+    int exists;
 } Fileinfo;
 
 int compare_by_name(const void *a, const void *b) {
@@ -145,12 +147,22 @@ int main(int argc, char *argv[]) {
 /*FILE CHECKER                                                                   */
 /*********************************************************************************/
 
-if( access( nome_fich, F_OK ) != -1){
-   printf("%s encontrado\n", nome_fich);
-}else{
-   printf("%s nao encontrado\n", nome_fich);
-}
+char *path = malloc(100 * sizeof(char));
 
+for(int i = 0; i<n_files; i++) {
+
+    strcpy(path, "./old_photo_PAR_A/");
+    strcat(path, fileinfo[i].filename);
+    
+    if( access(path, F_OK ) != -1){
+        printf("%s EXISTE ✅\n", fileinfo[i].filename);
+        fileinfo[i].exists = 1;
+    }else{
+        printf("%s NAO EXISTE ❌\n", fileinfo[i].filename);
+        fileinfo[i].exists = 1;
+    }
+
+}
 /*********************************************************************************/
 
 /*********************************************************************************/
@@ -159,7 +171,7 @@ if( access( nome_fich, F_OK ) != -1){
 
     pthread_t thread_id;
 
-    //for(int i = 0; i < THREADS; i++)
+    //for(int i = 0; i < THREADS; i++);
      //   pthread_create(&thread_id, NULL, apllyfilter, NULL);
 
 
