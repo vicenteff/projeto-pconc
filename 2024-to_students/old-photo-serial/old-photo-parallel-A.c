@@ -15,6 +15,7 @@ typedef struct
     char *filename;
     long int size;
     int exists;
+
 } Fileinfo;
 
 int compare_by_name(const void *a, const void *b) {
@@ -96,29 +97,31 @@ int sort_fileinfo(Fileinfo *fileinfo, char *order, int n_files) {
 int applyfilter() {
     
 }
+
 int main(int argc, char *argv[]) {
 
 /*********************************************************************************/
 /*PROGRAM ARGUMENTS                                                              */
 /*********************************************************************************/
 
-    char *dir = malloc(100 * sizeof(char));
-    char *order = malloc(100 * sizeof(char));
+    //char *dir = malloc(100 * sizeof(char));
+    //char *order = malloc(100 * sizeof(char));
     int threads, n_files;
 
-    strcpy(dir, DIRECTORY);
+    //strcpy(dir, DIRECTORY);
     threads = atoi(THREADS);
-    strcpy(order, ORDER);
+    //strcpy(order, ORDER);
 
     if(threads < 1) {
         perror("INVALID NUMBER OF THREADS\n");
         exit(1);
     }
 
-    if((strcmp(order, "-name") != 0) && (strcmp(order, "-size") != 0)) {
-        perror("INVALID ORDERING CRITERION\n");
+    if((strcmp(ORDER, "-name") != 0) && (strcmp(ORDER, "-size") != 0)) {
+        perror("INVALID SORTING CRITERION\n");
         exit(2);
     }
+
 /*********************************************************************************/
 
 /*********************************************************************************/
@@ -147,22 +150,22 @@ int main(int argc, char *argv[]) {
 /*FILE CHECKER                                                                   */
 /*********************************************************************************/
 
-char *path = malloc(100 * sizeof(char));
+    char *path = malloc(100 * sizeof(char));
 
-for(int i = 0; i<n_files; i++) {
+    for(int i = 0; i<n_files; i++) {
+        strcpy(path, "./old_photo_PAR_A/");
+        strcat(path, fileinfo[i].filename);
+        
+        if( access(path, F_OK ) != -1){
+            printf("%s EXISTS ✅\n", fileinfo[i].filename);
+            fileinfo[i].exists = 1;
+        }else{
+            printf("%s DOESN'T EXIST ❌\n", fileinfo[i].filename);
+            fileinfo[i].exists = 1;
+        }
 
-    strcpy(path, "./old_photo_PAR_A/");
-    strcat(path, fileinfo[i].filename);
-    
-    if( access(path, F_OK ) != -1){
-        printf("%s EXISTE ✅\n", fileinfo[i].filename);
-        fileinfo[i].exists = 1;
-    }else{
-        printf("%s NAO EXISTE ❌\n", fileinfo[i].filename);
-        fileinfo[i].exists = 1;
     }
 
-}
 /*********************************************************************************/
 
 /*********************************************************************************/
@@ -172,13 +175,41 @@ for(int i = 0; i<n_files; i++) {
     pthread_t thread_id;
 
     //for(int i = 0; i < THREADS; i++);
-     //   pthread_create(&thread_id, NULL, apllyfilter, NULL);
+     //   pthread_create(&thread_id, NULL, applyfilter, NULL);
 
 
 /*********************************************************************************/
 
-/*CREATES RESULTS FOLDER                                                         */ 
+/*********************************************************************************/
+/*CREATES RESULTS FOLDER AND FILES                                               */
+/*********************************************************************************/
 
     mkdir("old_photo_PAR_A", 0777);
+
+    FILE *fp;
+    
+    char timing[20];
+
+    snprintf(timing, sizeof(timing), "timing_%s%s", THREADS, ORDER);
+
+    chdir("old_photo_PAR_A"); 
+    fp = fopen(timing, "w");
+
+    fclose(fp);
+
+/*********************************************************************************/
+
+/*********************************************************************************/
+/*FREE EVERYTHING                                                                */
+/*********************************************************************************/
+
+    free(path);
+    
+    for(int i = 0; i < n_files; i++)
+        free(fileinfo[i].filename);
+
+    free(fileinfo);
+
+/*********************************************************************************/
 
 }
