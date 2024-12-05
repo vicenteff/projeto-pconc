@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
     
     char timing[20];
 
-    snprintf(timing, sizeof(timing), "timing_%s%s", THREADS, ORDER);
+    snprintf(timing, sizeof(timing), "timing_%s%s.txt", THREADS, ORDER);
 
     chdir("old_photo_PAR_A"); 
     fp = fopen(timing, "w");
