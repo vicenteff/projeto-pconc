@@ -32,9 +32,11 @@ int main(int argc, char *argv[]) {
     struct timespec *start_time_par = malloc(sizeof(struct timespec)*atoi(THREADS)), *end_time_par = malloc(sizeof(struct timespec)*atoi(THREADS));
     struct timespec *par_time = malloc(sizeof(struct timespec)*atoi(THREADS));
 
+    //struct timespec par_time;
+
     pthread_mutex_init(&lock, NULL); // Initialize the mutex
 
-    int threads, n_files;
+    int threads, n_files, sent_files;
     pipe(pipefd);
     pipe(time_pipefd);
     pipe(images_pipefd);
@@ -87,7 +89,7 @@ int main(int argc, char *argv[]) {
     mkdir("old_photo_PAR_B", 0777);
     FILE *fp;
     char timing[20];
-    snprintf(timing, sizeof(timing), "timing_%s%s.txt", THREADS, ORDER);
+    snprintf(timing, sizeof(timing), "timing_B_%s%s.txt", THREADS, ORDER);
     chdir("old_photo_PAR_B");
     fp = fopen(timing, "w");
     chdir("..");
@@ -103,36 +105,49 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    send_to_pipe(fileinfo, n_files);
+    sent_files = send_to_pipe(fileinfo, n_files);
     
     //PAUSES SEQUENCIAL TIME KEEPING
     clock_gettime(CLOCK_MONOTONIC, &end_time_seq);
 
     //INITIALIZES ARGUMENTS, CREATES THREADS THAT RUN THE APPLYFILTER FUNCTION AND STARTS PARALLELIZED TIME KEEPING
     for(int i = 0; i < threads; i++) {
-        t_args[i].lower_limit = (i * n_files) / threads;
-        t_args[i].upper_limit = ((i + 1) * n_files) / threads;
         t_args[i].fileinfo = fileinfo;
         t_args[i].in_texture_img = in_texture_img;
         t_args[i].directory = DIRECTORY;
+        t_args[i].read_fileinfo = malloc(n_files * sizeof(Fileinfo));
 
         pthread_create(&thread_ids[i], NULL, applyfilter, &t_args[i]);
-        clock_gettime(CLOCK_MONOTONIC, &start_time_par[i]);
+        //clock_gettime(CLOCK_MONOTONIC, &start_time_par[i]);
     }
 
-    s_args->n_files = n_files;
+    s_args->n_files = sent_files;
     pthread_create(&thread_ids[threads], NULL, s_key, s_args);
+
+    void* thread_ret = NULL;
 
     //WAITS FOR THE THREADS TO END, STOPS PARALLELIZED TIME KEEPING AND STORES TIME DATA
     for(int i = 0; i < threads; i++) {
-        pthread_join(thread_ids[i], NULL);
-        clock_gettime(CLOCK_MONOTONIC, &end_time_par[i]);
-        par_time[i] = diff_timespec(&end_time_par[i], &start_time_par[i]);
-        if(i == 0)
-            fprintf(fp,"\tpar%d \t %10jd.%09ld\n",i, par_time[i].tv_sec, par_time[i].tv_nsec);
-        else    
-            fprintf(fp,"\tpar%d \t %10jd.%09ld\n",i, par_time[i].tv_sec - par_time[i-1].tv_sec, labs(par_time[i].tv_nsec - par_time[i-1].tv_nsec));
+        pthread_join(thread_ids[i], &thread_ret);
+
+        struct timespec *thread_time = (struct timespec *)thread_ret;
+
+        fprintf(fp,"\tpar%d \t %10jd.%09ld\n",i, thread_time->tv_sec, thread_time->tv_nsec);
+        free(thread_time);
     }
+
+    
+
+    close(images_pipefd[0]);
+
+    close(pipefd[1]);
+    close(time_pipefd[1]);
+
+    pthread_cancel(thread_ids[threads]);
+    pthread_join(thread_ids[threads], NULL);
+
+    close(pipefd[0]);
+    close(time_pipefd[0]);
 
     pthread_mutex_destroy(&lock);
     
@@ -141,7 +156,7 @@ int main(int argc, char *argv[]) {
 
     //FREE ALLOCATED MEMORY
     free(thread_ids);
-    free(t_args);
+
     free(path);
 
     for(int i = 0; i < n_files; i++)
@@ -149,6 +164,12 @@ int main(int argc, char *argv[]) {
 
     free(fileinfo);
 
+    for(int i = 0; i < threads; i++)
+        free(t_args[i].read_fileinfo);
+
+    free(t_args);
+
+    free(s_args);
 
     gdImageDestroy(in_texture_img);
     

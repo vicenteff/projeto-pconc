@@ -18,8 +18,6 @@ typedef struct Fileinfo {
 
 //STRUCTURE FOR PASSING ARGUMENTS INTO THREAD FUNCTION
 typedef struct thread_args {
-    int lower_limit;
-    int upper_limit;
     Fileinfo *fileinfo;
     Fileinfo *read_fileinfo;
     gdImagePtr in_texture_img;

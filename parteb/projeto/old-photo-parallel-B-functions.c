@@ -100,23 +100,26 @@ int sort_fileinfo(Fileinfo *fileinfo, char *order, int n_files) {
 }
 
 //FUNCTION USED BY THE THREADS TO APPLY YHE FILTERS TO AN IMAGE
-//HERE THE DIVISION OF FILES BY THREADS IS GIVEN BY:
-// LOWER LIMIT : (i * N)/P, 
-// UPPER LIMIT : ((i+1) * N)/P,
-// i BEING THE THREAD ID, N THE MUBER OF IMAGES AND P THE NUMBER OF THREADS
+//HERE THE DIVISION OF FILES BY THREADS IS DONE THROUGH THE AVAILABILITY OF THREADS
 void *applyfilter(void *args) {
     thread_args *t_args = (thread_args*) args;
     char out_file_name[100];
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
     struct timespec start_avg_time = {0,0}, end_avg_time = {0,0}, diff_time = {0,0};
+    struct timespec start_time_par = {0,0}, end_time_par = {0,0};
+    struct timespec *diff_time_par = malloc(sizeof(struct timespec));
     int i = 0;
 
+    clock_gettime(CLOCK_MONOTONIC, &start_time_par);
+
     while (read(images_pipefd[0], &t_args->read_fileinfo[i], sizeof(Fileinfo)) != 0) {
+
         if (!t_args->read_fileinfo[i].exists) {
+
             clock_gettime(CLOCK_MONOTONIC, &start_avg_time);
 
             char fullpath[512];
-            snprintf(fullpath, sizeof(fullpath), "%s/%s", t_args->directory, t_args->fileinfo[i].filename);
+            snprintf(fullpath, sizeof(fullpath), "%s/%s", t_args->directory, t_args->read_fileinfo[i].filename);
 
             in_img = read_jpeg_file(fullpath);
             if (!in_img) {
@@ -129,7 +132,7 @@ void *applyfilter(void *args) {
             out_textured_img = texture_image(out_smoothed_img, t_args->in_texture_img);
             out_sepia_img = sepia_image(out_textured_img);
 
-            snprintf(out_file_name, sizeof(out_file_name), "./old_photo_PAR_B/%s", t_args->fileinfo[i].filename);
+            snprintf(out_file_name, sizeof(out_file_name), "./old_photo_PAR_B/%s", t_args->read_fileinfo[i].filename);
             if (!write_jpeg_file(out_sepia_img, out_file_name)) {
                 fprintf(stderr, "Cannot write %s image\n", out_file_name);
             }
@@ -153,12 +156,22 @@ void *applyfilter(void *args) {
             write(time_pipefd[1], &total_time, sizeof(struct timespec));
 
             pthread_mutex_unlock(&lock);
+
+            printf("Thread %ld just fetched an image from pipe\n", (pthread_self()%1000));
         }
 
         i++;
     }
 
-    return NULL;
+    clock_gettime(CLOCK_MONOTONIC, &end_time_par);
+    *diff_time_par = diff_timespec(&end_time_par, &start_time_par);
+    
+    start_time_par.tv_sec = 0;
+    start_time_par.tv_nsec = 0;
+    end_time_par.tv_sec = 0;
+    end_time_par.tv_nsec = 0;
+
+    return (void*) diff_time_par;
 }
 
 //LISTENS FOR S KEY AND PRINTS STATS
@@ -203,8 +216,17 @@ int print_stats(int n_files, int files_done, struct timespec total_time) {
     printf("\t %d out of %d files processed so far\n\n", files_done, n_files);
 
     struct timespec avg_time;
-    avg_time.tv_sec = total_time.tv_sec / files_done;
-    avg_time.tv_nsec = total_time.tv_nsec / files_done;
+    if(files_done == 0)  {
+        avg_time.tv_sec = 0;
+        avg_time.tv_nsec = 0;
+        
+    }
+    else {
+        avg_time.tv_sec = total_time.tv_sec / files_done;
+        avg_time.tv_nsec = total_time.tv_nsec / files_done;
+    }
+
+    
 
     printf("\t Average time per file: %ld.%09ld\n\n", avg_time.tv_sec, avg_time.tv_nsec);
 
@@ -212,14 +234,19 @@ int print_stats(int n_files, int files_done, struct timespec total_time) {
 }
 
 int send_to_pipe(Fileinfo *fileinfo, int n_files) {
-    
+    int sent_files = 0;
+
     for(int i = 0; i < n_files; i++) {
-        write(images_pipefd[1], &fileinfo[i], sizeof(Fileinfo)); // 100 IS THE MAXIMUM SIZE ALLOCATED FOR A FILENAME
+        if(!fileinfo[i].exists) {
+            write(images_pipefd[1], &fileinfo[i], sizeof(Fileinfo)); // 100 IS THE MAXIMUM SIZE ALLOCATED FOR A FILENAME
+
+            printf("Sent %s to pipe\n", fileinfo[i].filename);
+
+            sent_files++;
+        }
     }   
 
     close(images_pipefd[1]);
 
-    return 0;
+    return sent_files;
 }
-
-//close other pipes!!!
