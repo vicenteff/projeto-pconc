@@ -21,6 +21,7 @@ typedef struct thread_args {
     int lower_limit;
     int upper_limit;
     Fileinfo *fileinfo;
+    Fileinfo *read_fileinfo;
     gdImagePtr in_texture_img;
     char *directory;
 } thread_args;
@@ -40,3 +41,4 @@ int sort_fileinfo(Fileinfo *fileinfo, char *order, int n_files);
 void *applyfilter(void *args);
 void *s_key(void *args);
 int print_stats(int n_files, int files_done, struct timespec total_time);
+int send_to_pipe(Fileinfo *fileinfo, int n_files);

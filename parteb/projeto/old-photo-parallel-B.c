@@ -14,26 +14,30 @@
 #define THREADS argv[2]
 #define ORDER argv[3]
 
-int pipefd[2], time_pipefd[2];
+int pipefd[2], time_pipefd[2], images_pipefd[2];
 atomic_int files_done = 0;
 
 extern pthread_mutex_t lock;
 
 int main(int argc, char *argv[]) {
 
-    //DECLARES TIMEKEEPING STRUCTURES
+    //DECLARES SOME TIMEKEEPING VARIABLES
     struct timespec start_time_total, end_time_total;
     struct timespec start_time_seq, end_time_seq;
+
+    clock_gettime(CLOCK_MONOTONIC, &start_time_total);
+	clock_gettime(CLOCK_MONOTONIC, &start_time_seq);
+
+    //DECLARES TIMEKEEPING STRUCTURES
     struct timespec *start_time_par = malloc(sizeof(struct timespec)*atoi(THREADS)), *end_time_par = malloc(sizeof(struct timespec)*atoi(THREADS));
     struct timespec *par_time = malloc(sizeof(struct timespec)*atoi(THREADS));
 
     pthread_mutex_init(&lock, NULL); // Initialize the mutex
 
-	clock_gettime(CLOCK_MONOTONIC, &start_time_total);
-	clock_gettime(CLOCK_MONOTONIC, &start_time_seq);
     int threads, n_files;
     pipe(pipefd);
     pipe(time_pipefd);
+    pipe(images_pipefd);
 
     threads = atoi(THREADS);
 
@@ -99,6 +103,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    send_to_pipe(fileinfo, n_files);
+    
     //PAUSES SEQUENCIAL TIME KEEPING
     clock_gettime(CLOCK_MONOTONIC, &end_time_seq);
 

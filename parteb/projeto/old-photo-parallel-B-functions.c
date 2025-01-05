@@ -18,6 +18,8 @@ extern int time_pipefd[2];
 struct timespec total_time = {0,0};
 pthread_mutex_t lock;
 
+extern int images_pipefd[2];
+
 //FUNCTION TO COMPARE USING THE NAME
 int compare_by_name(const void *a, const void *b) {
     Fileinfo *file1 = (Fileinfo *)a;
@@ -107,9 +109,10 @@ void *applyfilter(void *args) {
     char out_file_name[100];
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
     struct timespec start_avg_time = {0,0}, end_avg_time = {0,0}, diff_time = {0,0};
+    int i = 0;
 
-    for (int i = t_args->lower_limit; i < t_args->upper_limit; i++) {
-        if (!t_args->fileinfo[i].exists) {
+    while (read(images_pipefd[0], &t_args->read_fileinfo[i], sizeof(Fileinfo)) != 0) {
+        if (!t_args->read_fileinfo[i].exists) {
             clock_gettime(CLOCK_MONOTONIC, &start_avg_time);
 
             char fullpath[512];
@@ -151,6 +154,8 @@ void *applyfilter(void *args) {
 
             pthread_mutex_unlock(&lock);
         }
+
+        i++;
     }
 
     return NULL;
@@ -205,3 +210,16 @@ int print_stats(int n_files, int files_done, struct timespec total_time) {
 
     return 0;
 }
+
+int send_to_pipe(Fileinfo *fileinfo, int n_files) {
+    
+    for(int i = 0; i < n_files; i++) {
+        write(images_pipefd[1], &fileinfo[i], sizeof(Fileinfo)); // 100 IS THE MAXIMUM SIZE ALLOCATED FOR A FILENAME
+    }   
+
+    close(images_pipefd[1]);
+
+    return 0;
+}
+
+//close other pipes!!!
