@@ -7,7 +7,7 @@ old-photo-parallel-B:
 	gcc -Wall old-photo-parallel-B.c image-lib.c image-lib.h old-photo-parallel-B-functions.c -g -o old-photo-parallel-B -lgd
 
 clean:
-	rm -rf old_photo_PAR_A old_photo_PAR_B
+	rm  old-photo-parallel-A old-photo-parallel-B
 	rm old_photo_PAR_A/*.jpeg old_photo_PAR_B/*.jpeg
 	
 clean_jpeg:
