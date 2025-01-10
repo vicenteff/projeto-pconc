@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if(threads < 1 || threads > 4) {
+    if(threads < 1 ) {
         perror("INVALID NUMBER OF THREADS\n");
         exit(1);
     }
