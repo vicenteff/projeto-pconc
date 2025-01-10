@@ -157,7 +157,7 @@ void *applyfilter(void *args) {
 
             pthread_mutex_unlock(&lock);
 
-            printf("Thread %ld just fetched an image from pipe\n", (pthread_self()%1000));
+            //printf("Thread %ld just fetched an image from pipe\n", (pthread_self()%1000));
         }
 
         i++;
@@ -240,7 +240,7 @@ int send_to_pipe(Fileinfo *fileinfo, int n_files) {
         if(!fileinfo[i].exists) {
             write(images_pipefd[1], &fileinfo[i], sizeof(Fileinfo)); // 100 IS THE MAXIMUM SIZE ALLOCATED FOR A FILENAME
 
-            printf("Sent %s to pipe\n", fileinfo[i].filename);
+            //printf("Sent %s to pipe\n", fileinfo[i].filename);
 
             sent_files++;
         }

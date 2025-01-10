@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <gd.h>
 #include "image-lib.h"
-#include "old-photo-parallel.h"
+#include "old-photo-parallel-A.h"
 
 #define DIRECTORY argv[1]
 #define THREADS argv[2]
